@@ -1,4 +1,8 @@
 {
   "name": "expoProjectManager",
-  "displayName": "expoProjectManager"
+  "displayName": "expoProjectManager",
+  "plugins": [
+    "expo-asset",
+    "expo-font"
+  ]
 }

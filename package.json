@@ -10,8 +10,16 @@
     "test": "jest"
   },
   "dependencies": {
+    "expo": "^53.0.0",
+    "expo-asset": "~11.1.7",
+    "expo-constants": "~17.1.7",
+    "expo-file-system": "~18.1.11",
+    "expo-font": "~13.3.2",
+    "expo-keep-awake": "~14.1.4",
     "react": "19.0.0",
-    "react-native": "0.78.3"
+    "react-native": "0.78.3",
+    "react-native-macos": "^0.78.6",
+    "react-native-reanimated": "~3.17.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
