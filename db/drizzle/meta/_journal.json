@@ -8,6 +8,13 @@
       "when": 1760229116908,
       "tag": "0000_superb_pestilence",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1760244452381,
+      "tag": "0001_minor_toad_men",
+      "breakpoints": true
     }
   ]
 }

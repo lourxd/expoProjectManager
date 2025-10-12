@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import 'react-native-reanimated';
-import {MainNavigator} from './navigation';
+import { runMigrations } from './db';
+import { MainNavigator } from './navigation';
 
-function App(): React.JSX.Element {
+export default function App(): React.JSX.Element {
+  useEffect(() => {
+    // Run migrations on mount
+    runMigrations();
+  }, []);
+
   return <MainNavigator />;
 }
-
-export default App;

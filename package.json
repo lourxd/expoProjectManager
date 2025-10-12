@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@react-native-community/progress-view": "^1.5.0",
+    "@react-native-picker/picker": "^2.11.2",
     "drizzle-orm": "^0.44.6",
     "expo": "^53.0.0",
     "expo-asset": "~11.1.7",

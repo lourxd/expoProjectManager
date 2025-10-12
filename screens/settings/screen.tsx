@@ -4,126 +4,204 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
   Switch,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
+import {theme} from '../../theme/colors';
+import {db, $} from '../../db';
 
 const SettingsScreen: React.FC = () => {
-  const isDarkMode = useColorScheme() === 'dark';
   const [isEnabled, setIsEnabled] = useState(false);
   const [selectedValue, setSelectedValue] = useState('apple');
+  const [isClearing, setIsClearing] = useState(false);
 
-  const textColor = isDarkMode ? '#ffffff' : '#000000';
-  const cardBackground = isDarkMode ? '#2a2a2a' : '#ffffff';
+  const handleClearDatabase = async () => {
+    Alert.alert(
+      'Clear Database',
+      'Are you sure you want to clear all projects from the database? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsClearing(true);
+              await db.delete($.project);
+              Alert.alert('Success', 'Database cleared successfully');
+            } catch (error) {
+              console.error('Error clearing database:', error);
+              Alert.alert('Error', 'Failed to clear database');
+            } finally {
+              setIsClearing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
-    <ScrollView style={[styles.container, {backgroundColor: isDarkMode ? '#1a1a1a' : '#f5f5f5'}]}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Ionicons
-            name="settings"
-            size={28}
-            color={isDarkMode ? '#0a7ea4' : '#007AFF'}
-          />
-          <Text style={[styles.title, {color: textColor}]}>Settings</Text>
+          <View style={styles.iconBadge}>
+            <Ionicons
+              name="settings-sharp"
+              size={28}
+              color={theme.brand.primary}
+            />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Settings</Text>
+            <Text style={styles.subtitle}>
+              Customize your experience
+            </Text>
+          </View>
         </View>
       </View>
 
-      <View style={[styles.card, {backgroundColor: cardBackground}]}>
-        <View style={styles.row}>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>Preferences</Text>
+        </View>
+        <View style={styles.settingRow}>
           <View style={styles.settingLeft}>
-            <Ionicons
-              name="notifications"
-              size={22}
-              color={isDarkMode ? '#98989d' : '#6b7280'}
-            />
-            <Text style={[styles.cardTitle, {color: textColor}]}>
-              Notifications
-            </Text>
+            <View style={styles.settingIcon}>
+              <Ionicons
+                name="notifications"
+                size={18}
+                color={theme.icon.secondary}
+              />
+            </View>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Notifications</Text>
+              <Text style={styles.settingDescription}>
+                Receive project updates
+              </Text>
+            </View>
           </View>
           <Switch
             value={isEnabled}
             onValueChange={setIsEnabled}
+            trackColor={{
+              false: theme.border.default,
+              true: theme.brand.primary,
+            }}
+            thumbColor={theme.text.primary}
           />
         </View>
       </View>
 
-      <View style={[styles.card, {backgroundColor: cardBackground}]}>
-        <View style={styles.settingLeft}>
-          <Ionicons
-            name="color-palette"
-            size={22}
-            color={isDarkMode ? '#98989d' : '#6b7280'}
-          />
-          <Text style={[styles.cardTitle, {color: textColor}]}>
-            Theme Selection
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>Theme Selection</Text>
+          <Text style={styles.cardDescription}>
+            Choose your preferred theme
           </Text>
         </View>
         <View style={styles.buttonGrid}>
           {[
-            {value: 'apple', icon: 'logo-apple'},
-            {value: 'banana', icon: 'nutrition'},
-            {value: 'orange', icon: 'sunny'},
-            {value: 'grape', icon: 'leaf'},
-            {value: 'mango', icon: 'heart'}
-          ].map(({value, icon}) => (
+            {value: 'apple', icon: 'logo-apple' as const, label: 'Apple'},
+            {value: 'banana', icon: 'nutrition' as const, label: 'Banana'},
+            {value: 'orange', icon: 'sunny' as const, label: 'Orange'},
+            {value: 'grape', icon: 'leaf' as const, label: 'Grape'},
+            {value: 'mango', icon: 'heart' as const, label: 'Mango'},
+          ].map(({value, icon, label}) => (
             <TouchableOpacity
               key={value}
               style={[
                 styles.selectButton,
                 selectedValue === value && styles.selectButtonActive,
               ]}
-              onPress={() => setSelectedValue(value)}
-            >
+              onPress={() => setSelectedValue(value)}>
               <Ionicons
                 name={icon}
                 size={16}
-                color={selectedValue === value ? '#ffffff' : '#6b7280'}
+                color={
+                  selectedValue === value
+                    ? theme.text.primary
+                    : theme.text.tertiary
+                }
               />
               <Text
                 style={[
                   styles.selectButtonText,
                   selectedValue === value && styles.selectButtonTextActive,
-                ]}
-              >
-                {value.charAt(0).toUpperCase() + value.slice(1)}
+                ]}>
+                {label}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
 
-      <View style={[styles.card, {backgroundColor: cardBackground}]}>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>Status</Text>
+        </View>
         <View style={styles.infoRow}>
           <Ionicons
             name="information-circle"
-            size={20}
-            color={isDarkMode ? '#0a7ea4' : '#007AFF'}
+            size={18}
+            color={theme.brand.primary}
           />
-          <Text style={[styles.infoText, {color: textColor}]}>
-            Selected: {selectedValue}
-          </Text>
+          <Text style={styles.infoText}>Selected: {selectedValue}</Text>
         </View>
         <View style={styles.infoRow}>
           <Ionicons
             name={isEnabled ? 'checkbox' : 'square-outline'}
-            size={20}
-            color={isDarkMode ? '#0a7ea4' : '#007AFF'}
+            size={18}
+            color={isEnabled ? theme.brand.accent : theme.text.tertiary}
           />
-          <Text style={[styles.infoText, {color: textColor}]}>
+          <Text style={styles.infoText}>
             Notifications: {isEnabled ? 'ON' : 'OFF'}
           </Text>
         </View>
       </View>
+
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>Danger Zone</Text>
+          <Text style={styles.cardDescription}>
+            Irreversible actions that affect your data
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.dangerButton, isClearing && styles.dangerButtonDisabled]}
+          onPress={handleClearDatabase}
+          disabled={isClearing}>
+          <View style={styles.dangerButtonContent}>
+            <View style={styles.dangerIcon}>
+              <Ionicons name="trash" size={18} color={theme.brand.error} />
+            </View>
+            <View style={styles.dangerInfo}>
+              <Text style={styles.dangerButtonText}>Clear Database</Text>
+              <Text style={styles.dangerButtonDescription}>
+                Remove all projects from database
+              </Text>
+            </View>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={theme.text.tertiary}
+          />
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.background.primary,
   },
   header: {
     padding: 24,
@@ -132,37 +210,90 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
+  },
+  iconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: theme.background.elevated,
+    borderWidth: 1,
+    borderColor: theme.border.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerText: {
+    flex: 1,
+    gap: 4,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '700',
+    color: theme.text.primary,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: theme.text.secondary,
+    letterSpacing: -0.2,
   },
   card: {
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginHorizontal: 24,
+    marginBottom: 24,
     padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 16,
+    backgroundColor: theme.background.card,
+    borderWidth: 1,
+    borderColor: theme.border.default,
+  },
+  cardHeader: {
+    marginBottom: 16,
+    gap: 4,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
+    fontWeight: '700',
+    color: theme.text.primary,
+    letterSpacing: -0.3,
+  },
+  cardDescription: {
+    fontSize: 13,
+    color: theme.text.secondary,
+    lineHeight: 18,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
   },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+    flex: 1,
   },
-  row: {
-    flexDirection: 'row',
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: theme.background.elevated,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+  },
+  settingInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  settingLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.text.primary,
+    letterSpacing: -0.2,
+  },
+  settingDescription: {
+    fontSize: 12,
+    color: theme.text.tertiary,
   },
   buttonGrid: {
     flexDirection: 'row',
@@ -172,34 +303,78 @@ const styles = StyleSheet.create({
   selectButton: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: 'transparent',
+    borderColor: theme.border.default,
+    backgroundColor: theme.background.elevated,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   selectButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+    backgroundColor: theme.brand.primary,
+    borderColor: theme.brand.primary,
   },
   selectButtonText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: theme.text.tertiary,
     fontWeight: '500',
   },
   selectButtonTextActive: {
-    color: '#ffffff',
-  },
-  infoText: {
-    fontSize: 14,
-    marginBottom: 8,
+    color: theme.text.primary,
+    fontWeight: '600',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    paddingVertical: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: theme.text.secondary,
+    fontWeight: '500',
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: theme.background.elevated,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 69, 58, 0.2)',
+  },
+  dangerButtonDisabled: {
+    opacity: 0.5,
+  },
+  dangerButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  dangerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 69, 58, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dangerInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  dangerButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.brand.error,
+    letterSpacing: -0.2,
+  },
+  dangerButtonDescription: {
+    fontSize: 12,
+    color: theme.text.tertiary,
   },
 });
 

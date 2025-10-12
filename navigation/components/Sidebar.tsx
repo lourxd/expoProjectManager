@@ -1,13 +1,10 @@
 import React, {useState, useEffect} from 'react';
-import {Pressable, StyleSheet, Text, View, useColorScheme, ScrollView} from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import {Pressable, StyleSheet, Text, View, ScrollView, Image} from 'react-native';
+import {Ionicons} from '@expo/vector-icons';
 import {db, $} from '../../db';
 import type {Project} from '../../db';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+import {theme} from '../../theme/colors';
+import {Logo} from './Logo';
 
 type SidebarProps = {
   selectedRoute: string;
@@ -16,54 +13,94 @@ type SidebarProps = {
 
 type SidebarItemProps = {
   title: string;
+  subtitle?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconPath?: string;
   isActive: boolean;
   onPress: () => void;
-  isDarkMode: boolean;
+  badge?: number;
 };
 
 const SidebarItem: React.FC<SidebarItemProps> = ({
   title,
+  subtitle,
+  icon,
+  iconPath,
   isActive,
   onPress,
-  isDarkMode,
+  badge,
 }) => {
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      backgroundColor: withTiming(
-        isActive ? (isDarkMode ? '#2c2c2e' : '#e5e7eb') : 'transparent',
-        {duration: 150}
-      ),
-    };
-  });
+  const [isHovered, setIsHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   return (
-    <AnimatedPressable style={[styles.sidebarItem, animatedStyle]} onPress={onPress}>
-      <Text
-        style={[
-          styles.sidebarItemText,
-          {
-            color: isActive
-              ? isDarkMode
-                ? '#ffffff'
-                : '#111827'
-              : isDarkMode
-              ? '#98989d'
-              : '#6b7280',
-          },
-          isActive && {fontWeight: '600'},
-        ]}
-        numberOfLines={1}>
-        {title}
-      </Text>
-    </AnimatedPressable>
+    <Pressable
+      style={[
+        styles.sidebarItem,
+        isActive && styles.sidebarItemActive,
+        isHovered && !isActive && styles.sidebarItemHovered,
+      ]}
+      onPress={onPress}
+      onHoverIn={() => setIsHovered(true)}
+      onHoverOut={() => setIsHovered(false)}>
+      {isActive && <View style={styles.activeIndicator} />}
+      <View style={styles.iconContainer}>
+        {iconPath && !imageError ? (
+          <Image
+            source={{uri: `file://${iconPath}`}}
+            style={styles.projectIcon}
+            resizeMode="contain"
+            onError={() => setImageError(true)}
+          />
+        ) : icon ? (
+          <Ionicons
+            name={icon}
+            size={20}
+            color={isActive ? theme.icon.brand : theme.icon.secondary}
+          />
+        ) : (
+          <Ionicons
+            name="folder"
+            size={20}
+            color={isActive ? theme.icon.brand : theme.icon.secondary}
+          />
+        )}
+      </View>
+      <View style={styles.textContainer}>
+        <Text
+          style={[
+            styles.sidebarItemText,
+            isActive && styles.sidebarItemTextActive,
+          ]}
+          numberOfLines={1}>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text style={styles.sidebarItemSubtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      {badge !== undefined && badge > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      )}
+    </Pressable>
   );
 };
+
+const SectionHeader: React.FC<{title: string}> = ({title}) => (
+  <View style={styles.sectionHeader}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={styles.sectionLine} />
+  </View>
+);
 
 export const Sidebar: React.FC<SidebarProps> = ({
   selectedRoute,
   onRouteSelect,
 }) => {
-  const isDarkMode = useColorScheme() === 'dark';
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
@@ -84,76 +121,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <View
-      style={[
-        styles.sidebar,
-        {
-          backgroundColor: isDarkMode ? '#1c1c1e' : '#f5f5f7',
-          borderRightColor: isDarkMode ? '#2c2c2e' : '#e5e5e7',
-        },
-      ]}>
-      <View
-        style={[
-          styles.sidebarHeader,
-          {borderBottomColor: isDarkMode ? '#2c2c2e' : '#e5e5e7'},
-        ]}>
-        <Text
-          style={[
-            styles.sidebarTitle,
-            {color: isDarkMode ? '#ffffff' : '#1d1d1f'},
-          ]}>
-          Expo Manager
-        </Text>
-      </View>
+    <View style={styles.sidebar}>
+      {/* Logo Header */}
+      <Logo />
 
-      <ScrollView style={styles.sidebarContent} showsVerticalScrollIndicator={false}>
-        {/* Home Section */}
-        <SidebarItem
-          title="Home"
-          isActive={selectedRoute === 'home'}
-          onPress={() => onRouteSelect('home')}
-          isDarkMode={isDarkMode}
-        />
+      {/* Main Navigation */}
+      <ScrollView
+        style={styles.sidebarContent}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}>
+        <View style={styles.section}>
+          <SidebarItem
+            title="Dashboard"
+            icon="home"
+            isActive={selectedRoute === 'home'}
+            onPress={() => onRouteSelect('home')}
+          />
+        </View>
 
         {/* Projects Section */}
         {projects.length > 0 && (
-          <>
-            <View
-              style={[
-                styles.separator,
-                {borderBottomColor: isDarkMode ? '#2c2c2e' : '#e5e5e7'},
-              ]}
-            />
-            <Text
-              style={[
-                styles.sectionTitle,
-                {color: isDarkMode ? '#98989d' : '#6b7280'},
-              ]}>
-              PROJECTS
-            </Text>
+          <View style={styles.section}>
+            <SectionHeader title="Projects" />
             {projects.map(project => (
               <SidebarItem
                 key={project.id}
-                title={project.name}
+                title={project.name || project.folderName}
+                subtitle={project.path}
+                iconPath={project.iconPath || undefined}
                 isActive={selectedRoute === `project-${project.id}`}
                 onPress={() => onRouteSelect(`project-${project.id}`)}
-                isDarkMode={isDarkMode}
               />
             ))}
-          </>
+          </View>
         )}
       </ScrollView>
 
-      <View
-        style={[
-          styles.sidebarBottom,
-          {borderTopColor: isDarkMode ? '#2c2c2e' : '#e5e5e7'},
-        ]}>
+      {/* Bottom Section */}
+      <View style={styles.sidebarBottom}>
+        <View style={styles.divider} />
         <SidebarItem
           title="Settings"
+          icon="settings-sharp"
           isActive={selectedRoute === 'settings'}
           onPress={() => onRouteSelect('settings')}
-          isDarkMode={isDarkMode}
         />
       </View>
     </View>
@@ -162,50 +173,121 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
 const styles = StyleSheet.create({
   sidebar: {
-    width: 220,
+    width: 260,
+    backgroundColor: theme.background.secondary,
     borderRightWidth: 1,
-  },
-  sidebarHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-  },
-  sidebarTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    borderRightColor: theme.border.subtle,
   },
   sidebarContent: {
     flex: 1,
-    paddingTop: 8,
   },
-  sidebarBottom: {
-    paddingTop: 8,
-    paddingBottom: 8,
-    borderTopWidth: 1,
+  scrollContent: {
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  section: {
+    marginBottom: 8,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: theme.text.tertiary,
+    textTransform: 'uppercase',
+  },
+  sectionLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.border.subtle,
   },
   sidebarItem: {
     marginHorizontal: 8,
-    marginVertical: 2,
-    paddingVertical: 8,
+    marginVertical: 1,
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingLeft: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    position: 'relative',
+  },
+  sidebarItemHovered: {
+    backgroundColor: theme.interactive.hover,
+  },
+  sidebarItemActive: {
+    backgroundColor: theme.interactive.selected,
+  },
+  iconContainer: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  projectIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+  },
+  textContainer: {
+    flex: 1,
+    gap: 1,
   },
   sidebarItemText: {
     fontSize: 14,
     fontWeight: '500',
+    color: theme.text.secondary,
+    letterSpacing: -0.1,
   },
-  separator: {
-    marginVertical: 12,
-    marginHorizontal: 8,
-    borderBottomWidth: 1,
-  },
-  sectionTitle: {
-    fontSize: 11,
+  sidebarItemTextActive: {
+    color: theme.text.primary,
     fontWeight: '600',
-    letterSpacing: 0.5,
-    paddingHorizontal: 20,
-    paddingVertical: 6,
-    marginTop: 4,
+  },
+  sidebarItemSubtitle: {
+    fontSize: 10,
+    fontWeight: '400',
+    color: theme.text.muted,
+    letterSpacing: -0.05,
+    opacity: 0.7,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    left: 1,
+    top: 6,
+    bottom: 6,
+    width: 3,
+    backgroundColor: theme.brand.primary,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  badge: {
+    backgroundColor: theme.brand.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.text.primary,
+  },
+  sidebarBottom: {
+    paddingVertical: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.border.subtle,
+    marginHorizontal: 12,
+    marginBottom: 8,
   },
 });

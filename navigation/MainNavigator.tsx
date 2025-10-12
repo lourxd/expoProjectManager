@@ -1,10 +1,9 @@
-import React, {useState, useCallback, useEffect} from 'react';
-import {StyleSheet, View} from 'react-native';
-import Animated, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
-import {Sidebar} from './components/Sidebar';
-import {DEFAULT_ROUTE, allRoutes} from './routes';
+import React, { useCallback, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import ProjectDetailScreen from '../screens/project-detail/screen';
-import {runMigrations} from '../db';
+import { Sidebar } from './components/Sidebar';
+import { DEFAULT_ROUTE, allRoutes } from './routes';
 
 type ScreenWrapperProps = {
   isActive: boolean;
@@ -30,19 +29,16 @@ const ScreenWrapper: React.FC<ScreenWrapperProps> = React.memo(
         {children}
       </Animated.View>
     );
-  }
+  },
 );
 
 ScreenWrapper.displayName = 'ScreenWrapper';
 
 export const MainNavigator: React.FC = () => {
   const [selectedRoute, setSelectedRoute] = useState(DEFAULT_ROUTE);
-  const [mountedProjectScreens, setMountedProjectScreens] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    // Run migrations on mount
-    runMigrations();
-  }, []);
+  const [mountedProjectScreens, setMountedProjectScreens] = useState<
+    Set<string>
+  >(new Set());
 
   const handleRouteSelect = useCallback((route: string) => {
     setSelectedRoute(route);
