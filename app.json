@@ -1,8 +1,11 @@
 {
   "name": "expoProjectManager",
   "displayName": "expoProjectManager",
+  "version": "1.0.0",
+  
   "plugins": [
     "expo-asset",
-    "expo-font"
+    "expo-font",
+    "expo-sqlite"
   ]
 }

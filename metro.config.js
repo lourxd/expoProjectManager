@@ -1,5 +1,4 @@
 const {getDefaultConfig} = require('expo/metro-config');
-const {mergeConfig} = require('@react-native/metro-config');
 const {
   wrapWithReanimatedMetroConfig,
 } = require('react-native-reanimated/metro-config');
@@ -10,8 +9,10 @@ const {
  *
  * @type {import('@react-native/metro-config').MetroConfig}
  */
-const config = {};
 
-module.exports = wrapWithReanimatedMetroConfig(
-  mergeConfig(getDefaultConfig(__dirname), config),
-);
+const config = getDefaultConfig(__dirname);
+
+// Add SQL file support for Drizzle ORM
+config.resolver.sourceExts.push('sql');
+
+module.exports = wrapWithReanimatedMetroConfig(config);
