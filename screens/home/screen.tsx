@@ -5,103 +5,56 @@ import {
   Text,
   View,
   Pressable,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import {
-  scanForExpoProjects,
-  getDefaultSearchPaths,
+import ProjectScanner, {
+  projectScannerEmitter,
+  ScannedProject,
   ScanProgress,
-  ProjectMetadata,
-} from '../../utils/expoProjectScanner';
+} from '../../nativeModules/ProjectScanner';
 import {db, $} from '../../db';
 import {theme} from '../../theme/colors';
-
-interface LogEntry {
-  id: number;
-  type: 'scanning' | 'found' | 'skipped' | 'processing' | 'info';
-  message: string;
-  path?: string;
-  timestamp: Date;
-}
+import FolderPicker from '../../nativeModules/FolderPicker';
 
 
 
 const HomeScreen: React.FC = () => {
-  const [expoProjects, setExpoProjects] = useState<ProjectMetadata[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [currentScanPath, setCurrentScanPath] = useState<string>('');
   const [savedCount, setSavedCount] = useState(0);
-  const [scanLogs, setScanLogs] = useState<LogEntry[]>([]);
+  const [foundCount, setFoundCount] = useState(0);
+  const [scannedCount, setScannedCount] = useState(0);
 
   useEffect(() => {
     loadSavedProjects();
-  }, []);
 
-  const loadSavedProjects = async () => {
-    try {
-      const projects = await db.select().from($.project);
-      setSavedCount(projects.length);
-    } catch (error) {
-      console.error('Error fetching projects:', error);
+    // Subscribe to scan progress events
+    if (!projectScannerEmitter) {
+      console.warn('ProjectScanner module not available');
+      return;
     }
-  };
 
+    const progressSubscription = projectScannerEmitter.addListener(
+      'onScanProgress',
+      (progress: ScanProgress) => {
+        setCurrentScanPath(progress.currentPath);
+        setScannedCount(prev => prev + 1);
 
-  const addLog = (type: LogEntry['type'], message: string, path?: string) => {
-    setScanLogs(prev => {
-      const newId = prev.length > 0 ? Math.max(...prev.map(l => l.id)) + 1 : 0;
-      const newLog: LogEntry = {
-        id: newId,
-        type,
-        message,
-        path,
-        timestamp: new Date(),
-      };
-      // Keep only last 50 logs to avoid memory issues
-      const updated = [...prev, newLog];
-      return updated.slice(-50);
-    });
-  };
-
-  const handleScan = async () => {
-    try {
-      setIsScanning(true);
-      setExpoProjects([]);
-      setCurrentScanPath('');
-      setScanLogs([]);
-
-      addLog('info', 'Starting scan...', '');
-
-      const searchPaths = getDefaultSearchPaths('lou');
-      addLog('info', `Scanning ${searchPaths.length} directories`, '');
-
-      const projects = await scanForExpoProjects(
-        searchPaths,
-        (progress: ScanProgress) => {
-          setCurrentScanPath(progress.currentPath);
-
-          // Add detailed log entry based on type
-          if (progress.type === 'found') {
-            addLog('found', progress.message || 'Found project', progress.currentPath);
-          } else if (progress.type === 'skipped') {
-            addLog('skipped', progress.message || 'Skipped project', progress.currentPath);
-          }
-          // Don't log every scanning event as it's too verbose
+        if (progress.type === 'found') {
+          setFoundCount(prev => prev + 1);
         }
-      );
-
-      setExpoProjects(projects);
-      addLog('info', `Scan complete! Found ${projects.length} Expo projects`, '');
-
-      // Save projects to database with all metadata
-      if (projects.length > 0) {
-        addLog('processing', `Saving ${projects.length} projects to database...`, '');
       }
+    );
 
-      const now = new Date();
-      let savedSuccessfully = 0;
-
-      for (const project of projects) {
+    // Subscribe to project found events
+    const projectFoundSubscription = projectScannerEmitter.addListener(
+      'onProjectFound',
+      async (project: ScannedProject) => {
+        // Save project to database immediately
+        const now = new Date();
         try {
           await db.insert($.project).values({
             folderName: project.folderName,
@@ -113,211 +66,274 @@ const HomeScreen: React.FC = () => {
             iconPath: project.iconPath,
             sdkVersion: project.sdkVersion,
             version: project.version,
-            size: project.size,
+            folderSize: project.folderSize,
+            projectSize: project.projectSize,
+            dependencies: project.dependencies,
+            devDependencies: project.devDependencies,
+            orientation: project.orientation,
+            platforms: project.platforms,
+            backgroundColor: project.backgroundColor,
+            primaryColor: project.primaryColor,
+            bundleIdentifier: project.bundleIdentifier,
+            androidPackage: project.androidPackage,
+            permissions: project.permissions,
+            splash: project.splash,
+            updates: project.updates,
+            plugins: project.plugins,
+            extra: project.extra,
             createdAt: now,
             updatedAt: now,
           });
-          savedSuccessfully++;
+          // Update saved count immediately
+          setSavedCount(prev => prev + 1);
         } catch (e) {
-          // Skip duplicates
-          addLog('info', `Already in database: ${project.name || project.folderName}`, project.path);
+          // Skip duplicates (unique path constraint)
         }
       }
+    );
 
-      await loadSavedProjects();
-      if (savedSuccessfully > 0) {
-        addLog('info', `✓ Saved ${savedSuccessfully} new projects to database`, '');
+    return () => {
+      progressSubscription.remove();
+      projectFoundSubscription.remove();
+    };
+  }, []);
+
+  const loadSavedProjects = async () => {
+    try {
+      const projects = await db.select().from($.project);
+      setSavedCount(projects.length);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  const handleSelectFolder = async () => {
+    try {
+      const folderPath = await FolderPicker.pickFolder();
+      if (folderPath) {
+        setSelectedFolder(folderPath);
+        setFoundCount(0);
+        setScannedCount(0);
       }
     } catch (error) {
+      console.error('Error selecting folder:', error);
+    }
+  };
+
+  const handleScan = async () => {
+    if (!selectedFolder) {
+      return;
+    }
+
+    try {
+      setIsScanning(true);
+      setCurrentScanPath('');
+      setFoundCount(0);
+      setScannedCount(0);
+
+      await ProjectScanner.scanFolder(selectedFolder);
+    } catch (error) {
       console.error('Error scanning for Expo projects:', error);
-      addLog('info', `Error: ${error}`, '');
     } finally {
       setIsScanning(false);
       setCurrentScanPath('');
     }
   };
 
+  const handleStopScan = () => {
+    Alert.alert(
+      'Stop Scanning',
+      'Are you sure you want to stop the current scan? Projects found so far will still be saved.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Stop Scan',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await ProjectScanner.cancelScan();
+            } catch (error) {
+              console.error('Error stopping scan:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={styles.iconBadge}>
-            <Ionicons
-              name="folder-open"
-              size={28}
-              color={theme.brand.primary}
-            />
+        <View style={styles.headerContent}>
+          <View style={styles.headerTop}>
+            <View style={styles.iconBadge}>
+              <Ionicons
+                name="rocket"
+                size={24}
+                color={theme.brand.primary}
+              />
+            </View>
+            <View style={styles.headerText}>
+              <Text style={styles.title}>Project Scanner</Text>
+              <Text style={styles.subtitle}>
+                Discover and manage your Expo projects
+              </Text>
+            </View>
           </View>
-          <View style={styles.headerText}>
-            <Text style={styles.title}>Project Scanner</Text>
-            <Text style={styles.subtitle}>
-              Discover and manage your Expo projects
+
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="search" size={16} color={theme.brand.primary} />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{scannedCount}</Text>
+                <Text style={styles.statLabel}>Scanned</Text>
+              </View>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <View style={[styles.statIconContainer, {backgroundColor: 'rgba(48, 209, 88, 0.15)'}]}>
+                <Ionicons name="checkmark-circle" size={16} color={theme.brand.accent} />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={[styles.statValue, {color: theme.brand.accent}]}>{foundCount}</Text>
+                <Text style={styles.statLabel}>Found</Text>
+              </View>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <View style={[styles.statIconContainer, {backgroundColor: 'rgba(48, 209, 88, 0.15)'}]}>
+                <Ionicons name="cube" size={16} color={theme.icon.success} />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={[styles.statValue, {color: theme.icon.success}]}>{savedCount}</Text>
+                <Text style={styles.statLabel}>Saved</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.content}>
+
+        {/* Folder Selection Card */}
+        <View style={styles.card}>
+          <View style={styles.cardIcon}>
+            <Ionicons name="folder-open" size={20} color={theme.brand.primary} />
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle}>Select Projects Folder</Text>
+            <Text style={styles.cardDescription}>
+              Choose the folder containing your Expo projects
             </Text>
+
+            <Pressable
+              style={({pressed}) => [
+                styles.primaryButton,
+                selectedFolder && styles.secondaryButton,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={handleSelectFolder}>
+              <Ionicons
+                name={selectedFolder ? 'folder' : 'folder-open'}
+                size={16}
+                color={selectedFolder ? theme.text.primary : '#FFFFFF'}
+              />
+              <Text style={[
+                styles.primaryButtonText,
+                selectedFolder && styles.secondaryButtonText
+              ]}>
+                {selectedFolder ? 'Change Folder' : 'Select Folder'}
+              </Text>
+            </Pressable>
+
+            {selectedFolder && (
+              <View style={styles.selectedFolderBadge}>
+                <View style={styles.badgeIcon}>
+                  <Ionicons name="checkmark-circle" size={12} color={theme.brand.accent} />
+                </View>
+                <Text style={styles.selectedFolderPath} numberOfLines={1}>
+                  {selectedFolder}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
-      </View>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Ionicons name="apps" size={20} color={theme.brand.primary} />
-          <Text style={styles.statValue}>{expoProjects.length}</Text>
-          <Text style={styles.statLabel}>Found</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Ionicons name="save" size={20} color={theme.brand.accent} />
-          <Text style={styles.statValue}>{savedCount}</Text>
-          <Text style={styles.statLabel}>Saved</Text>
-        </View>
-      </View>
+        {/* Scan Card */}
+        {selectedFolder && (
+          <View style={styles.card}>
+            <View style={styles.cardIcon}>
+              <Ionicons name="search" size={20} color={theme.brand.primary} />
+            </View>
+            <View style={styles.cardBody}>
+              <Text style={styles.cardTitle}>Scan for Projects</Text>
+              <Text style={styles.cardDescription}>
+                Search the selected folder for Expo projects
+              </Text>
 
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Scan Projects</Text>
-          <Text style={styles.cardDescription}>
-            Search your file system for Expo projects
-          </Text>
-        </View>
-        <Pressable
-          style={({pressed}) => [
-            styles.button,
-            {opacity: pressed ? 0.8 : 1},
-            isScanning && styles.buttonScanning,
-          ]}
-          onPress={handleScan}
-          disabled={isScanning}>
-          <Ionicons
-            name={isScanning ? 'sync' : 'search'}
-            size={20}
-            color={theme.text.primary}
-          />
-          <Text style={styles.buttonText}>
-            {isScanning ? 'Scanning...' : 'Start Scan'}
-          </Text>
-        </Pressable>
+              <View style={styles.buttonRow}>
+                <Pressable
+                  style={({pressed}) => [
+                    styles.primaryButton,
+                    isScanning && styles.scanningButton,
+                    pressed && !isScanning && styles.buttonPressed,
+                    isScanning && styles.flexButton,
+                  ]}
+                  onPress={handleScan}
+                  disabled={isScanning}>
+                  {isScanning ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="search" size={16} color="#FFFFFF" />
+                  )}
+                  <Text style={styles.primaryButtonText}>
+                    {isScanning ? 'Scanning...' : 'Start Scan'}
+                  </Text>
+                </Pressable>
+
+                {isScanning && (
+                  <Pressable
+                    style={({pressed}) => [
+                      styles.stopButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                    onPress={handleStopScan}>
+                    <Ionicons name="stop-circle" size={16} color={theme.brand.error} />
+                    <Text style={styles.stopButtonText}>Stop</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Active Scan Progress */}
         {isScanning && currentScanPath && (
-          <View style={styles.scanProgressContainer}>
-            <Text style={styles.scanProgressLabel}>Currently Scanning:</Text>
-            <Text style={styles.scanProgress} numberOfLines={1}>
-              {currentScanPath.replace('file://', '')}
-            </Text>
+          <View style={styles.progressCard}>
+            <View style={styles.progressHeader}>
+              <ActivityIndicator size="small" color={theme.brand.primary} />
+              <View style={styles.progressInfo}>
+                <Text style={styles.progressTitle}>Scanning in progress</Text>
+                <Text style={styles.progressSubtitle}>
+                  {scannedCount} folders · {foundCount} projects found
+                </Text>
+              </View>
+            </View>
+            <View style={styles.progressPathContainer}>
+              <Ionicons name="arrow-forward" size={10} color={theme.text.tertiary} />
+              <Text style={styles.progressPath} numberOfLines={1}>
+                {currentScanPath.replace('file://', '')}
+              </Text>
+            </View>
           </View>
         )}
       </View>
-
-      {/* Scan Logs */}
-      {scanLogs.length > 0 && (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Scan Activity Log</Text>
-            <Text style={styles.cardDescription}>
-              Real-time updates during scanning
-            </Text>
-          </View>
-          <View style={styles.logContainer}>
-            {scanLogs.slice().reverse().map((log) => (
-              <View key={log.id} style={styles.logEntry}>
-                <View style={[
-                  styles.logIcon,
-                  log.type === 'found' && styles.logIconFound,
-                  log.type === 'skipped' && styles.logIconSkipped,
-                  log.type === 'info' && styles.logIconInfo,
-                  log.type === 'processing' && styles.logIconProcessing,
-                ]}>
-                  <Ionicons
-                    name={
-                      log.type === 'found' ? 'checkmark-circle' :
-                      log.type === 'skipped' ? 'close-circle' :
-                      log.type === 'processing' ? 'sync' :
-                      'information-circle'
-                    }
-                    size={16}
-                    color={
-                      log.type === 'found' ? theme.brand.accent :
-                      log.type === 'skipped' ? theme.text.muted :
-                      log.type === 'processing' ? theme.brand.warning :
-                      theme.brand.primary
-                    }
-                  />
-                </View>
-                <View style={styles.logContent}>
-                  <Text style={styles.logMessage}>{log.message}</Text>
-                  {log.path && (
-                    <Text style={styles.logPath} numberOfLines={1}>
-                      {log.path.replace('file://', '')}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {expoProjects.length > 0 && (
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>
-              Found Projects ({expoProjects.length})
-            </Text>
-            <Text style={styles.cardDescription}>
-              Recently discovered Expo projects
-            </Text>
-          </View>
-          <View style={styles.projectList}>
-            {expoProjects.map((project, index) => (
-              <View key={index} style={styles.projectItem}>
-                <View style={styles.projectIconContainer}>
-                  <Ionicons
-                    name="logo-react"
-                    size={24}
-                    color={theme.brand.primary}
-                  />
-                </View>
-                <View style={styles.projectInfo}>
-                  <Text style={styles.projectName}>
-                    {project.name || project.folderName}
-                  </Text>
-                  <Text style={styles.projectPath} numberOfLines={1}>
-                    {project.path}
-                  </Text>
-                  <View style={styles.projectMeta}>
-                    {project.version && (
-                      <View style={styles.metaBadge}>
-                        <Ionicons
-                          name="pricetag"
-                          size={10}
-                          color={theme.text.tertiary}
-                        />
-                        <Text style={styles.metaText}>v{project.version}</Text>
-                      </View>
-                    )}
-                    {project.sdkVersion && (
-                      <View style={styles.metaBadge}>
-                        <Ionicons
-                          name="cube"
-                          size={10}
-                          color={theme.text.tertiary}
-                        />
-                        <Text style={styles.metaText}>SDK {project.sdkVersion}</Text>
-                      </View>
-                    )}
-                    {project.size && (
-                      <View style={styles.metaBadge}>
-                        <Ionicons
-                          name="folder-outline"
-                          size={10}
-                          color={theme.text.tertiary}
-                        />
-                        <Text style={styles.metaText}>{project.size}</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
     </ScrollView>
   );
 }
@@ -328,18 +344,25 @@ const styles = StyleSheet.create({
     backgroundColor: theme.background.primary,
   },
   header: {
-    padding: 24,
-    paddingTop: 32,
+    backgroundColor: theme.background.card,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.border.default,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerContent: {
+    paddingHorizontal: 20,
     gap: 16,
   },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
   iconBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: theme.background.elevated,
     borderWidth: 1,
     borderColor: theme.border.default,
@@ -351,59 +374,88 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: theme.text.primary,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.text.secondary,
-    letterSpacing: -0.2,
+    letterSpacing: -0.1,
   },
-  statsContainer: {
+  statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: theme.background.card,
-    borderWidth: 1,
-    borderColor: theme.border.default,
+    backgroundColor: theme.background.elevated,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     alignItems: 'center',
-    gap: 8,
+  },
+  statItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  statIconContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: 'rgba(10, 132, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statContent: {
+    gap: 2,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: '700',
     color: theme.text.primary,
+    letterSpacing: -0.3,
   },
   statLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 10,
+    fontWeight: '600',
     color: theme.text.tertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  card: {
-    marginHorizontal: 24,
-    marginBottom: 24,
+  statDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: theme.border.subtle,
+    marginHorizontal: 6,
+  },
+  content: {
     padding: 20,
-    borderRadius: 16,
+    gap: 16,
+  },
+  card: {
     backgroundColor: theme.background.card,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: theme.border.default,
+    padding: 18,
+    flexDirection: 'row',
+    gap: 14,
   },
-  cardHeader: {
-    marginBottom: 16,
-    gap: 4,
+  cardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: theme.background.elevated,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardBody: {
+    flex: 1,
+    gap: 12,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: theme.text.primary,
     letterSpacing: -0.3,
@@ -412,151 +464,128 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.text.secondary,
     lineHeight: 18,
+    marginTop: -6,
   },
-  button: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 2,
+  },
+  primaryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     backgroundColor: theme.brand.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
   },
-  buttonScanning: {
-    opacity: 0.7,
+  flexButton: {
+    flex: 1,
   },
-  buttonText: {
-    color: theme.text.primary,
-    fontSize: 15,
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.2,
   },
-  scanProgressContainer: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 8,
+  secondaryButton: {
     backgroundColor: theme.background.elevated,
-    borderWidth: 1,
-    borderColor: theme.border.subtle,
-    gap: 4,
-  },
-  scanProgressLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  scanProgress: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    color: theme.text.secondary,
-  },
-  projectList: {
-    gap: 12,
-    marginTop: 16,
-  },
-  projectItem: {
-    flexDirection: 'row',
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: theme.background.elevated,
-    borderWidth: 1,
-    borderColor: theme.border.subtle,
-    gap: 12,
-  },
-  projectIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: theme.background.secondary,
     borderWidth: 1,
     borderColor: theme.border.default,
+  },
+  secondaryButtonText: {
+    color: theme.text.primary,
+  },
+  stopButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.3)',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
   },
-  projectInfo: {
-    flex: 1,
-    gap: 6,
-  },
-  projectName: {
-    fontSize: 15,
+  stopButtonText: {
+    color: theme.brand.error,
+    fontSize: 14,
     fontWeight: '600',
-    color: theme.text.primary,
     letterSpacing: -0.2,
   },
-  projectPath: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-    color: theme.text.tertiary,
+  buttonPressed: {
+    opacity: 0.7,
+    transform: [{scale: 0.98}],
   },
-  projectMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
+  scanningButton: {
+    opacity: 0.8,
   },
-  metaBadge: {
+  selectedFolderBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: theme.background.secondary,
-  },
-  metaText: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: theme.text.secondary,
-  },
-  logContainer: {
     gap: 8,
-    maxHeight: 300,
-  },
-  logEntry: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    padding: 10,
     borderRadius: 8,
     backgroundColor: theme.background.elevated,
     borderWidth: 1,
     borderColor: theme.border.subtle,
+    marginTop: 2,
   },
-  logIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  badgeIcon: {
+    width: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logIconFound: {
-    backgroundColor: 'rgba(48, 209, 88, 0.1)',
-  },
-  logIconSkipped: {
-    backgroundColor: 'rgba(74, 74, 74, 0.1)',
-  },
-  logIconInfo: {
-    backgroundColor: 'rgba(10, 132, 255, 0.1)',
-  },
-  logIconProcessing: {
-    backgroundColor: 'rgba(255, 159, 10, 0.1)',
-  },
-  logContent: {
+  selectedFolderPath: {
     flex: 1,
-    gap: 2,
+    fontSize: 11,
+    fontFamily: 'monospace',
+    color: theme.text.secondary,
   },
-  logMessage: {
-    fontSize: 13,
-    fontWeight: '500',
+  progressCard: {
+    backgroundColor: theme.background.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.border.default,
+    padding: 16,
+    marginHorizontal: 20,
+    gap: 12,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  progressInfo: {
+    flex: 1,
+    gap: 3,
+  },
+  progressTitle: {
+    fontSize: 14,
+    fontWeight: '700',
     color: theme.text.primary,
     letterSpacing: -0.2,
   },
-  logPath: {
-    fontSize: 11,
+  progressSubtitle: {
+    fontSize: 12,
+    color: theme.text.secondary,
+    letterSpacing: -0.1,
+  },
+  progressPathContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: theme.background.elevated,
+  },
+  progressPath: {
+    flex: 1,
+    fontSize: 10,
     fontFamily: 'monospace',
     color: theme.text.tertiary,
   },
