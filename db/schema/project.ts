@@ -12,7 +12,8 @@ export const project = sqliteTable('project', {
   iconPath: text('icon_path'),
   sdkVersion: text('sdk_version'),
   version: text('version'),
-  size: text('size'),
+  projectSize: text('project_size'),
+  folderSize: text('folder_size'),
   createdAt: integer('created_at', {mode: 'timestamp'}),
   updatedAt: integer('updated_at', {mode: 'timestamp'}),
 });

@@ -15,6 +15,7 @@
 		514201582437B4B40078DB4F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 514201572437B4B40078DB4F /* main.m */; };
 		9A73C8E72E9B721500769875 /* CommandRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8E62E9B721500769875 /* CommandRunner.swift */; };
 		9A73C8EB2E9B725000769875 /* CommandRunner.m in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8EA2E9B725000769875 /* CommandRunner.m */; };
+		9A73C8F12E9C211A00769875 /* FolderPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8F02E9C211A00769875 /* FolderPicker.m */; };
 		AD36F588FEB08241D3A5197A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4CD9F45CC0A4A4CFFC5D4DFE /* PrivacyInfo.xcprivacy */; };
 		C9346058FFB1AAB882806150 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4CD9F45CC0A4A4CFFC5D4DFE /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
@@ -34,6 +35,8 @@
 		6FCA097C4F24CB38425307D3 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-expoProjectManager-macOS/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		9A73C8E62E9B721500769875 /* CommandRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandRunner.swift; sourceTree = "<group>"; };
 		9A73C8EA2E9B725000769875 /* CommandRunner.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CommandRunner.m; sourceTree = "<group>"; };
+		9A73C8EF2E9C20F400769875 /* FolderPicker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FolderPicker.h; sourceTree = "<group>"; };
+		9A73C8F02E9C211A00769875 /* FolderPicker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FolderPicker.m; sourceTree = "<group>"; };
 		C55F051682B3CB60532562DF /* Pods-expoProjectManager-macOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-expoProjectManager-macOS.release.xcconfig"; path = "Target Support Files/Pods-expoProjectManager-macOS/Pods-expoProjectManager-macOS.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F4F5D4E00C83689D931B35FA /* libPods-expoProjectManager-macOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-expoProjectManager-macOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -78,6 +81,7 @@
 		5142014A2437B4B30078DB4F /* expoProjectManager-macOS */ = {
 			isa = PBXGroup;
 			children = (
+				9A73C8EC2E9C208B00769875 /* NativeModules */,
 				5142014B2437B4B30078DB4F /* AppDelegate.h */,
 				5142014C2437B4B30078DB4F /* AppDelegate.mm */,
 				514201512437B4B40078DB4F /* Assets.xcassets */,
@@ -85,8 +89,6 @@
 				514201562437B4B40078DB4F /* Info.plist */,
 				514201572437B4B40078DB4F /* main.m */,
 				514201592437B4B40078DB4F /* expoProjectManager.entitlements */,
-				9A73C8E62E9B721500769875 /* CommandRunner.swift */,
-				9A73C8EA2E9B725000769875 /* CommandRunner.m */,
 			);
 			path = "expoProjectManager-macOS";
 			sourceTree = "<group>";
@@ -129,6 +131,33 @@
 				514201492437B4B30078DB4F /* expoProjectManager.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9A73C8EC2E9C208B00769875 /* NativeModules */ = {
+			isa = PBXGroup;
+			children = (
+				9A73C8EE2E9C20D800769875 /* FolderPicker */,
+				9A73C8ED2E9C209200769875 /* CommandRunner */,
+			);
+			path = NativeModules;
+			sourceTree = "<group>";
+		};
+		9A73C8ED2E9C209200769875 /* CommandRunner */ = {
+			isa = PBXGroup;
+			children = (
+				9A73C8E62E9B721500769875 /* CommandRunner.swift */,
+				9A73C8EA2E9B725000769875 /* CommandRunner.m */,
+			);
+			path = CommandRunner;
+			sourceTree = "<group>";
+		};
+		9A73C8EE2E9C20D800769875 /* FolderPicker */ = {
+			isa = PBXGroup;
+			children = (
+				9A73C8EF2E9C20F400769875 /* FolderPicker.h */,
+				9A73C8F02E9C211A00769875 /* FolderPicker.m */,
+			);
+			path = FolderPicker;
 			sourceTree = "<group>";
 		};
 		9FFFB6BCCF455FCFC0B64F11 /* Pods */ = {
@@ -360,6 +389,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				514201582437B4B40078DB4F /* main.m in Sources */,
+				9A73C8F12E9C211A00769875 /* FolderPicker.m in Sources */,
 				5142014D2437B4B30078DB4F /* AppDelegate.mm in Sources */,
 				4B67CBA38037004AB68C3557 /* ExpoModulesProvider.swift in Sources */,
 				9A73C8E72E9B721500769875 /* CommandRunner.swift in Sources */,
@@ -562,10 +592,7 @@
 				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -624,10 +651,7 @@
 					"\"$(inherited)\"",
 				);
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = false;

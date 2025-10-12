@@ -24,13 +24,14 @@ interface LogEntry {
   timestamp: Date;
 }
 
+
+
 const HomeScreen: React.FC = () => {
   const [expoProjects, setExpoProjects] = useState<ProjectMetadata[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [currentScanPath, setCurrentScanPath] = useState<string>('');
   const [savedCount, setSavedCount] = useState(0);
   const [scanLogs, setScanLogs] = useState<LogEntry[]>([]);
-  const [logIdCounter, setLogIdCounter] = useState(0);
 
   useEffect(() => {
     loadSavedProjects();
@@ -47,10 +48,10 @@ const HomeScreen: React.FC = () => {
 
 
   const addLog = (type: LogEntry['type'], message: string, path?: string) => {
-    setLogIdCounter(prev => prev + 1);
     setScanLogs(prev => {
+      const newId = prev.length > 0 ? Math.max(...prev.map(l => l.id)) + 1 : 0;
       const newLog: LogEntry = {
-        id: logIdCounter,
+        id: newId,
         type,
         message,
         path,
@@ -68,7 +69,6 @@ const HomeScreen: React.FC = () => {
       setExpoProjects([]);
       setCurrentScanPath('');
       setScanLogs([]);
-      setLogIdCounter(0);
 
       addLog('info', 'Starting scan...', '');
 
@@ -510,6 +510,55 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: theme.text.secondary,
+  },
+  logContainer: {
+    gap: 8,
+    maxHeight: 300,
+  },
+  logEntry: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: theme.background.elevated,
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+  },
+  logIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logIconFound: {
+    backgroundColor: 'rgba(48, 209, 88, 0.1)',
+  },
+  logIconSkipped: {
+    backgroundColor: 'rgba(74, 74, 74, 0.1)',
+  },
+  logIconInfo: {
+    backgroundColor: 'rgba(10, 132, 255, 0.1)',
+  },
+  logIconProcessing: {
+    backgroundColor: 'rgba(255, 159, 10, 0.1)',
+  },
+  logContent: {
+    flex: 1,
+    gap: 2,
+  },
+  logMessage: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: theme.text.primary,
+    letterSpacing: -0.2,
+  },
+  logPath: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    color: theme.text.tertiary,
   },
 });
 
