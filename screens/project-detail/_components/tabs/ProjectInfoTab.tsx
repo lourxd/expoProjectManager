@@ -7,84 +7,87 @@ import {useProject} from '../../../../contexts/ProjectContext';
 export default function ProjectInfoTab() {
   const {project} = useProject();
 
-  const InfoRow = ({icon, label, value, badge}: {icon: any; label: string; value: string; badge?: boolean}) => (
-    <>
-      <View style={styles.infoRow}>
-        <View style={styles.infoLabel}>
-          <Ionicons name={icon} size={14} color={theme.icon.secondary} />
-          <Text style={styles.infoLabelText}>{label}</Text>
-        </View>
-        {badge ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{value}</Text>
-          </View>
-        ) : (
-          <Text style={styles.infoValue}>{value}</Text>
-        )}
-      </View>
-      <View style={styles.divider} />
-    </>
-  );
-
   return (
     <ScrollView
       style={styles.tabContent}
       contentContainerStyle={styles.tabContentContainer}
       showsVerticalScrollIndicator={false}>
 
-      {/* Basic Info */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="information-circle" size={18} color={theme.brand.primary} />
-          <Text style={styles.cardTitle}>Basic Information</Text>
-        </View>
-
-        <InfoRow icon="document-text" label="Name" value={project.name || project.folderName} />
-        <InfoRow icon="folder" label="Folder" value={project.folderName} />
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoLabel}>
-            <Ionicons name="folder-open" size={14} color={theme.icon.secondary} />
-            <Text style={styles.infoLabelText}>Path</Text>
+      {/* Stats Cards */}
+      <View style={styles.statsRow}>
+        {project.folderSize && (
+          <View style={styles.statCard}>
+            <Ionicons name="folder" size={16} color={theme.brand.primary} />
+            <Text style={styles.statValue}>{project.folderSize}</Text>
+            <Text style={styles.statLabel}>Total Size</Text>
           </View>
-          <Text style={styles.infoValue} numberOfLines={2}>
-            {project.path}
-          </Text>
-        </View>
-        <View style={styles.divider} />
-
-        {project.slug && <InfoRow icon="at" label="Slug" value={project.slug} />}
-        {project.scheme && <InfoRow icon="link" label="Scheme" value={project.scheme} />}
-        {project.bundleIdentifier && <InfoRow icon="logo-apple" label="Bundle ID" value={project.bundleIdentifier} />}
-        {project.androidPackage && <InfoRow icon="logo-android" label="Package" value={project.androidPackage} />}
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoLabel}>
-            <Ionicons name="key" size={14} color={theme.icon.secondary} />
-            <Text style={styles.infoLabelText}>ID</Text>
+        )}
+        {project.projectSize && (
+          <View style={styles.statCard}>
+            <Ionicons name="document" size={16} color={theme.brand.primary} />
+            <Text style={styles.statValue}>{project.projectSize}</Text>
+            <Text style={styles.statLabel}>Project Size</Text>
           </View>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>#{project.id}</Text>
-          </View>
-        </View>
+        )}
       </View>
 
-      {/* Version & SDK */}
+      {/* Main Info Card */}
       <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="code-slash" size={18} color={theme.brand.primary} />
-          <Text style={styles.cardTitle}>Version & SDK</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Name</Text>
+          <Text style={styles.value}>{project.name || project.folderName}</Text>
         </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Folder</Text>
+          <Text style={styles.value}>{project.folderName}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Path</Text>
+          <Text style={styles.value} numberOfLines={1}>{project.path}</Text>
+        </View>
+        {project.slug && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Slug</Text>
+            <Text style={styles.value}>{project.slug}</Text>
+          </View>
+        )}
+        {project.scheme && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Scheme</Text>
+            <Text style={styles.value}>{project.scheme}</Text>
+          </View>
+        )}
+      </View>
 
-        {project.version && <InfoRow icon="pricetag" label="Version" value={`v${project.version}`} badge />}
-        {project.sdkVersion && <InfoRow icon="logo-react" label="Expo SDK" value={`SDK ${project.sdkVersion}`} badge />}
-
-        {project.usesNewArch !== undefined && project.usesNewArch !== null && (
-          <View style={styles.infoRow}>
-            <View style={styles.infoLabel}>
-              <Ionicons name="construct" size={14} color={theme.icon.secondary} />
-              <Text style={styles.infoLabelText}>New Architecture</Text>
+      {/* Platform IDs */}
+      {(project.bundleIdentifier || project.androidPackage) && (
+        <View style={styles.card}>
+          {project.bundleIdentifier && (
+            <View style={styles.row}>
+              <View style={styles.labelWithIcon}>
+                <Ionicons name="logo-apple" size={14} color={theme.text.secondary} />
+                <Text style={styles.label}>iOS Bundle</Text>
+              </View>
+              <Text style={styles.value}>{project.bundleIdentifier}</Text>
             </View>
+          )}
+          {project.androidPackage && (
+            <View style={styles.row}>
+              <View style={styles.labelWithIcon}>
+                <Ionicons name="logo-android" size={14} color={theme.text.secondary} />
+                <Text style={styles.label}>Android Package</Text>
+              </View>
+              <Text style={styles.value}>{project.androidPackage}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Architecture & Timestamps */}
+      <View style={styles.card}>
+        {project.usesNewArch !== undefined && project.usesNewArch !== null && (
+          <View style={styles.row}>
+            <Text style={styles.label}>New Architecture</Text>
             <View style={[styles.badge, project.usesNewArch && styles.badgeSuccess]}>
               <Text style={styles.badgeText}>
                 {project.usesNewArch ? 'Enabled' : 'Disabled'}
@@ -92,61 +95,16 @@ export default function ProjectInfoTab() {
             </View>
           </View>
         )}
-      </View>
-
-      {/* Storage */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="server" size={18} color={theme.brand.primary} />
-          <Text style={styles.cardTitle}>Storage</Text>
-        </View>
-
-        {project.folderSize && <InfoRow icon="folder" label="Total Size" value={project.folderSize} badge />}
-        {project.projectSize && <InfoRow icon="document" label="Project Size" value={project.projectSize} badge />}
-        {project.iconPath && (
-          <View style={styles.infoRow}>
-            <View style={styles.infoLabel}>
-              <Ionicons name="image" size={14} color={theme.icon.secondary} />
-              <Text style={styles.infoLabelText}>Icon</Text>
-            </View>
-            <Text style={styles.infoValue} numberOfLines={1}>
-              {project.iconPath.split('/').pop()}
-            </Text>
+        {project.createdAt && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Created</Text>
+            <Text style={styles.value}>{new Date(project.createdAt).toLocaleDateString()}</Text>
           </View>
         )}
-      </View>
-
-      {/* Timestamps */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Ionicons name="time" size={18} color={theme.brand.primary} />
-          <Text style={styles.cardTitle}>Timestamps</Text>
-        </View>
-
-        {project.createdAt && (
-          <>
-            <View style={styles.infoRow}>
-              <View style={styles.infoLabel}>
-                <Ionicons name="add-circle" size={14} color={theme.icon.secondary} />
-                <Text style={styles.infoLabelText}>Added</Text>
-              </View>
-              <Text style={styles.infoValue}>
-                {new Date(project.createdAt).toLocaleString()}
-              </Text>
-            </View>
-            <View style={styles.divider} />
-          </>
-        )}
-
         {project.updatedAt && (
-          <View style={styles.infoRow}>
-            <View style={styles.infoLabel}>
-              <Ionicons name="refresh-circle" size={14} color={theme.icon.secondary} />
-              <Text style={styles.infoLabelText}>Updated</Text>
-            </View>
-            <Text style={styles.infoValue}>
-              {new Date(project.updatedAt).toLocaleString()}
-            </Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Last Updated</Text>
+            <Text style={styles.value}>{new Date(project.updatedAt).toLocaleDateString()}</Text>
           </View>
         )}
       </View>
@@ -160,75 +118,80 @@ const styles = StyleSheet.create({
   },
   tabContentContainer: {
     padding: 16,
-    paddingBottom: 24,
+    gap: 12,
   },
-  card: {
-    marginBottom: 16,
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
     padding: 16,
-    borderRadius: 14,
+    borderRadius: 10,
     backgroundColor: theme.background.card,
     borderWidth: 1,
     borderColor: theme.border.default,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 14,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: theme.text.primary,
-    letterSpacing: -0.3,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    gap: 12,
-  },
-  infoLabel: {
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flex: 1,
   },
-  infoLabelText: {
-    fontSize: 13,
+  statValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.text.primary,
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    fontSize: 11,
     fontWeight: '600',
+    color: theme.text.secondary,
+    letterSpacing: 0.1,
+  },
+  card: {
+    padding: 16,
+    borderRadius: 10,
+    backgroundColor: theme.background.card,
+    borderWidth: 1,
+    borderColor: theme.border.default,
+    gap: 12,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '500',
     color: theme.text.secondary,
     letterSpacing: -0.1,
   },
-  infoValue: {
+  labelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  value: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
     color: theme.text.primary,
     letterSpacing: -0.1,
     textAlign: 'right',
     flex: 1,
   },
   badge: {
-    backgroundColor: theme.background.elevated,
+    backgroundColor: 'rgba(255, 159, 10, 0.15)',
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: theme.border.default,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   badgeSuccess: {
     backgroundColor: 'rgba(48, 209, 88, 0.15)',
-    borderColor: 'rgba(48, 209, 88, 0.3)',
   },
   badgeText: {
     fontSize: 11,
     fontWeight: '700',
     color: theme.text.primary,
-    letterSpacing: 0.3,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: theme.border.subtle,
+    letterSpacing: 0.2,
   },
 });

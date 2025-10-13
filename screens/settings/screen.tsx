@@ -13,26 +13,42 @@ import {theme} from '../../theme/colors';
 import {db, $} from '../../db';
 
 const SettingsScreen: React.FC = () => {
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [selectedValue, setSelectedValue] = useState('apple');
+  const [autoScanOnStartup, setAutoScanOnStartup] = useState(false);
+  const [showFileSizes, setShowFileSizes] = useState(true);
+  const [includeHiddenFiles, setIncludeHiddenFiles] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [projectCount, setProjectCount] = useState(0);
+
+  React.useEffect(() => {
+    loadProjectCount();
+  }, []);
+
+  const loadProjectCount = async () => {
+    try {
+      const projects = await db.select().from($.project);
+      setProjectCount(projects.length);
+    } catch (error) {
+      console.error('Error loading project count:', error);
+    }
+  };
 
   const handleClearDatabase = async () => {
     Alert.alert(
       'Clear Database',
-      'Are you sure you want to clear all projects from the database? This action cannot be undone.',
+      `Are you sure you want to clear all ${projectCount} projects from the database? This action cannot be undone.`,
       [
         {
           text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Clear',
+          text: 'Clear All',
           style: 'destructive',
           onPress: async () => {
             try {
               setIsClearing(true);
               await db.delete($.project);
+              await loadProjectCount();
               Alert.alert('Success', 'Database cleared successfully');
             } catch (error) {
               console.error('Error clearing database:', error);
@@ -49,46 +65,59 @@ const SettingsScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={styles.iconBadge}>
-            <Ionicons
-              name="settings-sharp"
-              size={28}
-              color={theme.brand.primary}
-            />
-          </View>
-          <View style={styles.headerText}>
-            <Text style={styles.title}>Settings</Text>
-            <Text style={styles.subtitle}>
-              Customize your experience
-            </Text>
-          </View>
-        </View>
+        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.subtitle}>
+          Manage your application preferences
+        </Text>
       </View>
 
+      {/* Scanner Preferences */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Preferences</Text>
+          <Ionicons name="settings" size={20} color={theme.brand.primary} />
+          <Text style={styles.cardTitle}>Scanner Preferences</Text>
         </View>
+
         <View style={styles.settingRow}>
           <View style={styles.settingLeft}>
             <View style={styles.settingIcon}>
-              <Ionicons
-                name="notifications"
-                size={18}
-                color={theme.icon.secondary}
-              />
+              <Ionicons name="play-circle" size={18} color={theme.icon.secondary} />
             </View>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Notifications</Text>
+              <Text style={styles.settingLabel}>Auto-scan on startup</Text>
               <Text style={styles.settingDescription}>
-                Receive project updates
+                Automatically scan for projects when app opens
               </Text>
             </View>
           </View>
           <Switch
-            value={isEnabled}
-            onValueChange={setIsEnabled}
+            value={autoScanOnStartup}
+            onValueChange={setAutoScanOnStartup}
+            trackColor={{
+              false: theme.border.default,
+              true: theme.brand.primary,
+            }}
+            thumbColor={theme.text.primary}
+          />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.settingRow}>
+          <View style={styles.settingLeft}>
+            <View style={styles.settingIcon}>
+              <Ionicons name="eye-off" size={18} color={theme.icon.secondary} />
+            </View>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Include hidden files</Text>
+              <Text style={styles.settingDescription}>
+                Scan directories that start with a dot
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={includeHiddenFiles}
+            onValueChange={setIncludeHiddenFiles}
             trackColor={{
               false: theme.border.default,
               true: theme.brand.primary,
@@ -98,80 +127,79 @@ const SettingsScreen: React.FC = () => {
         </View>
       </View>
 
+      {/* Display Preferences */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Theme Selection</Text>
-          <Text style={styles.cardDescription}>
-            Choose your preferred theme
-          </Text>
+          <Ionicons name="color-palette" size={20} color={theme.brand.primary} />
+          <Text style={styles.cardTitle}>Display Preferences</Text>
         </View>
-        <View style={styles.buttonGrid}>
-          {[
-            {value: 'apple', icon: 'logo-apple' as const, label: 'Apple'},
-            {value: 'banana', icon: 'nutrition' as const, label: 'Banana'},
-            {value: 'orange', icon: 'sunny' as const, label: 'Orange'},
-            {value: 'grape', icon: 'leaf' as const, label: 'Grape'},
-            {value: 'mango', icon: 'heart' as const, label: 'Mango'},
-          ].map(({value, icon, label}) => (
-            <TouchableOpacity
-              key={value}
-              style={[
-                styles.selectButton,
-                selectedValue === value && styles.selectButtonActive,
-              ]}
-              onPress={() => setSelectedValue(value)}>
-              <Ionicons
-                name={icon}
-                size={16}
-                color={
-                  selectedValue === value
-                    ? theme.text.primary
-                    : theme.text.tertiary
-                }
-              />
-              <Text
-                style={[
-                  styles.selectButtonText,
-                  selectedValue === value && styles.selectButtonTextActive,
-                ]}>
-                {label}
+
+        <View style={styles.settingRow}>
+          <View style={styles.settingLeft}>
+            <View style={styles.settingIcon}>
+              <Ionicons name="resize" size={18} color={theme.icon.secondary} />
+            </View>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Show file sizes</Text>
+              <Text style={styles.settingDescription}>
+                Display project and folder sizes in list
               </Text>
-            </TouchableOpacity>
-          ))}
+            </View>
+          </View>
+          <Switch
+            value={showFileSizes}
+            onValueChange={setShowFileSizes}
+            trackColor={{
+              false: theme.border.default,
+              true: theme.brand.primary,
+            }}
+            thumbColor={theme.text.primary}
+          />
         </View>
       </View>
 
+      {/* Database Info */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Status</Text>
+          <Ionicons name="server" size={20} color={theme.brand.primary} />
+          <Text style={styles.cardTitle}>Database Information</Text>
         </View>
+
         <View style={styles.infoRow}>
-          <Ionicons
-            name="information-circle"
-            size={18}
-            color={theme.brand.primary}
-          />
-          <Text style={styles.infoText}>Selected: {selectedValue}</Text>
+          <View style={styles.infoIconContainer}>
+            <Ionicons name="cube" size={16} color={theme.brand.primary} />
+          </View>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Total Projects</Text>
+            <Text style={styles.infoValue}>{projectCount}</Text>
+          </View>
         </View>
+
+        <View style={styles.divider} />
+
         <View style={styles.infoRow}>
-          <Ionicons
-            name={isEnabled ? 'checkbox' : 'square-outline'}
-            size={18}
-            color={isEnabled ? theme.brand.accent : theme.text.tertiary}
-          />
-          <Text style={styles.infoText}>
-            Notifications: {isEnabled ? 'ON' : 'OFF'}
-          </Text>
+          <View style={styles.infoIconContainer}>
+            <Ionicons name="folder" size={16} color={theme.icon.secondary} />
+          </View>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Database Location</Text>
+            <Text style={styles.infoValue}>Local SQLite</Text>
+          </View>
         </View>
       </View>
 
+      {/* Danger Zone */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Danger Zone</Text>
-          <Text style={styles.cardDescription}>
-            Irreversible actions that affect your data
-          </Text>
+          <Ionicons name="warning" size={20} color={theme.brand.error} />
+          <Text style={[styles.cardTitle, {color: theme.brand.error}]}>Danger Zone</Text>
         </View>
+        <Text style={styles.cardDescription}>
+          Irreversible actions that affect your data
+        </Text>
+
+        <View style={styles.spacer} />
+
         <TouchableOpacity
           style={[styles.dangerButton, isClearing && styles.dangerButtonDisabled]}
           onPress={handleClearDatabase}
@@ -181,9 +209,9 @@ const SettingsScreen: React.FC = () => {
               <Ionicons name="trash" size={18} color={theme.brand.error} />
             </View>
             <View style={styles.dangerInfo}>
-              <Text style={styles.dangerButtonText}>Clear Database</Text>
+              <Text style={styles.dangerButtonText}>Clear All Projects</Text>
               <Text style={styles.dangerButtonDescription}>
-                Remove all projects from database
+                Remove all {projectCount} projects from database
               </Text>
             </View>
           </View>
@@ -206,31 +234,14 @@ const styles = StyleSheet.create({
   header: {
     padding: 24,
     paddingTop: 32,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  iconBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: theme.background.elevated,
-    borderWidth: 1,
-    borderColor: theme.border.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    flex: 1,
-    gap: 4,
+    paddingBottom: 20,
+    gap: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: theme.text.primary,
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 14,
@@ -247,19 +258,31 @@ const styles = StyleSheet.create({
     borderColor: theme.border.default,
   },
   cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginBottom: 16,
-    gap: 4,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: theme.text.primary,
     letterSpacing: -0.3,
+    flex: 1,
   },
   cardDescription: {
     fontSize: 13,
     color: theme.text.secondary,
     lineHeight: 18,
+    marginBottom: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.border.subtle,
+    marginVertical: 12,
+  },
+  spacer: {
+    height: 12,
   },
   settingRow: {
     flexDirection: 'row',
@@ -295,45 +318,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.text.tertiary,
   },
-  buttonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  selectButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: theme.border.default,
-    backgroundColor: theme.background.elevated,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  selectButtonActive: {
-    backgroundColor: theme.brand.primary,
-    borderColor: theme.brand.primary,
-  },
-  selectButtonText: {
-    fontSize: 14,
-    color: theme.text.tertiary,
-    fontWeight: '500',
-  },
-  selectButtonTextActive: {
-    color: theme.text.primary,
-    fontWeight: '600',
-  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
+    gap: 12,
+    paddingVertical: 10,
   },
-  infoText: {
-    fontSize: 14,
+  infoIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: theme.background.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoContent: {
+    flex: 1,
+    gap: 2,
+  },
+  infoLabel: {
+    fontSize: 13,
+    fontWeight: '600',
     color: theme.text.secondary,
-    fontWeight: '500',
+    letterSpacing: -0.1,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.text.primary,
+    letterSpacing: -0.2,
   },
   dangerButton: {
     flexDirection: 'row',

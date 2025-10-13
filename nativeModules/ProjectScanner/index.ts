@@ -41,6 +41,7 @@ export interface ScanResult {
 
 export interface ProjectScannerModule {
   scanFolder(folderPath: string): Promise<ScanResult>;
+  scanSingleProject(projectPath: string): Promise<ScannedProject>;
   cancelScan(): Promise<boolean>;
 }
 

@@ -18,6 +18,10 @@
 		9A73C8F12E9C211A00769875 /* FolderPicker.m in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8F02E9C211A00769875 /* FolderPicker.m */; };
 		9A73C8F62E9C279B00769875 /* ProjectScanner.m in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8F32E9C279B00769875 /* ProjectScanner.m */; };
 		9A73C8F72E9C279B00769875 /* ProjectScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8F42E9C279B00769875 /* ProjectScanner.swift */; };
+		9A73C8FB2E9C787600769875 /* ModalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8F92E9C787600769875 /* ModalManager.swift */; };
+		9A73C8FC2E9C787600769875 /* ModalManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8F82E9C787600769875 /* ModalManager.m */; };
+		9A73C9002E9C7BB900769875 /* PackageChecker.m in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8FD2E9C7BB900769875 /* PackageChecker.m */; };
+		9A73C9012E9C7BB900769875 /* PackageChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A73C8FE2E9C7BB900769875 /* PackageChecker.swift */; };
 		AD36F588FEB08241D3A5197A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4CD9F45CC0A4A4CFFC5D4DFE /* PrivacyInfo.xcprivacy */; };
 		C9346058FFB1AAB882806150 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4CD9F45CC0A4A4CFFC5D4DFE /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
@@ -41,6 +45,10 @@
 		9A73C8F02E9C211A00769875 /* FolderPicker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FolderPicker.m; sourceTree = "<group>"; };
 		9A73C8F32E9C279B00769875 /* ProjectScanner.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ProjectScanner.m; sourceTree = "<group>"; };
 		9A73C8F42E9C279B00769875 /* ProjectScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectScanner.swift; sourceTree = "<group>"; };
+		9A73C8F82E9C787600769875 /* ModalManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ModalManager.m; sourceTree = "<group>"; };
+		9A73C8F92E9C787600769875 /* ModalManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalManager.swift; sourceTree = "<group>"; };
+		9A73C8FD2E9C7BB900769875 /* PackageChecker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PackageChecker.m; sourceTree = "<group>"; };
+		9A73C8FE2E9C7BB900769875 /* PackageChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageChecker.swift; sourceTree = "<group>"; };
 		C55F051682B3CB60532562DF /* Pods-expoProjectManager-macOS.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-expoProjectManager-macOS.release.xcconfig"; path = "Target Support Files/Pods-expoProjectManager-macOS/Pods-expoProjectManager-macOS.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F4F5D4E00C83689D931B35FA /* libPods-expoProjectManager-macOS.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-expoProjectManager-macOS.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -140,6 +148,8 @@
 		9A73C8EC2E9C208B00769875 /* NativeModules */ = {
 			isa = PBXGroup;
 			children = (
+				9A73C8FF2E9C7BB900769875 /* PackageChecker */,
+				9A73C8FA2E9C787600769875 /* ModalManager */,
 				9A73C8F52E9C279B00769875 /* ProjectScanner */,
 				9A73C8EE2E9C20D800769875 /* FolderPicker */,
 				9A73C8ED2E9C209200769875 /* CommandRunner */,
@@ -172,6 +182,24 @@
 				9A73C8F42E9C279B00769875 /* ProjectScanner.swift */,
 			);
 			path = ProjectScanner;
+			sourceTree = "<group>";
+		};
+		9A73C8FA2E9C787600769875 /* ModalManager */ = {
+			isa = PBXGroup;
+			children = (
+				9A73C8F82E9C787600769875 /* ModalManager.m */,
+				9A73C8F92E9C787600769875 /* ModalManager.swift */,
+			);
+			path = ModalManager;
+			sourceTree = "<group>";
+		};
+		9A73C8FF2E9C7BB900769875 /* PackageChecker */ = {
+			isa = PBXGroup;
+			children = (
+				9A73C8FD2E9C7BB900769875 /* PackageChecker.m */,
+				9A73C8FE2E9C7BB900769875 /* PackageChecker.swift */,
+			);
+			path = PackageChecker;
 			sourceTree = "<group>";
 		};
 		9FFFB6BCCF455FCFC0B64F11 /* Pods */ = {
@@ -405,9 +433,13 @@
 				514201582437B4B40078DB4F /* main.m in Sources */,
 				9A73C8F12E9C211A00769875 /* FolderPicker.m in Sources */,
 				5142014D2437B4B30078DB4F /* AppDelegate.mm in Sources */,
+				9A73C9002E9C7BB900769875 /* PackageChecker.m in Sources */,
+				9A73C9012E9C7BB900769875 /* PackageChecker.swift in Sources */,
 				4B67CBA38037004AB68C3557 /* ExpoModulesProvider.swift in Sources */,
 				9A73C8E72E9B721500769875 /* CommandRunner.swift in Sources */,
 				9A73C8F62E9C279B00769875 /* ProjectScanner.m in Sources */,
+				9A73C8FB2E9C787600769875 /* ModalManager.swift in Sources */,
+				9A73C8FC2E9C787600769875 /* ModalManager.m in Sources */,
 				9A73C8F72E9C279B00769875 /* ProjectScanner.swift in Sources */,
 				9A73C8EB2E9B725000769875 /* CommandRunner.m in Sources */,
 			);

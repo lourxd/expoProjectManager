@@ -72,6 +72,51 @@ class ProjectScanner: RCTEventEmitter {
     }
   }
 
+  @objc
+  func scanSingleProject(_ projectPath: String,
+                        resolver resolve: @escaping RCTPromiseResolveBlock,
+                        rejecter reject: @escaping RCTPromiseRejectBlock) {
+
+    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+      guard let self = self else {
+        reject("SCANNER_ERROR", "Scanner instance lost", nil)
+        return
+      }
+
+      let fileManager = FileManager.default
+      let packageJsonPath = (projectPath as NSString).appendingPathComponent("package.json")
+      let appJsonPath = (projectPath as NSString).appendingPathComponent("app.json")
+
+      // Check if this is a valid Expo project
+      guard fileManager.fileExists(atPath: packageJsonPath),
+            fileManager.fileExists(atPath: appJsonPath) else {
+        reject("INVALID_PROJECT", "Not a valid Expo project", nil)
+        return
+      }
+
+      // Read package.json
+      guard let packageData = try? Data(contentsOf: URL(fileURLWithPath: packageJsonPath)),
+            let packageJson = try? JSONSerialization.jsonObject(with: packageData) as? [String: Any],
+            let dependencies = packageJson["dependencies"] as? [String: Any],
+            (dependencies["expo"] != nil || dependencies["@expo/vector-icons"] != nil) else {
+        reject("INVALID_PROJECT", "Not an Expo project", nil)
+        return
+      }
+
+      // Extract project data
+      let projectData = self.extractProjectData(
+        fullPath: projectPath,
+        packageJson: packageJson,
+        appJsonPath: appJsonPath,
+        fileManager: fileManager
+      )
+
+      DispatchQueue.main.async {
+        resolve(projectData)
+      }
+    }
+  }
+
   private func scanDirectory(at path: String, fileManager: FileManager) -> Bool {
     // Check for cancellation
     if shouldCancelScan {

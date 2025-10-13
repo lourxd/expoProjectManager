@@ -168,52 +168,29 @@ const HomeScreen: React.FC = () => {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <View style={styles.headerTop}>
-            <View style={styles.iconBadge}>
-              <Ionicons
-                name="rocket"
-                size={24}
-                color={theme.brand.primary}
-              />
-            </View>
-            <View style={styles.headerText}>
-              <Text style={styles.title}>Project Scanner</Text>
-              <Text style={styles.subtitle}>
-                Discover and manage your Expo projects
-              </Text>
-            </View>
-          </View>
+          <Text style={styles.title}>Project Scanner</Text>
+          <Text style={styles.subtitle}>
+            Discover and manage your Expo projects
+          </Text>
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="search" size={16} color={theme.brand.primary} />
-              </View>
-              <View style={styles.statContent}>
-                <Text style={styles.statValue}>{scannedCount}</Text>
-                <Text style={styles.statLabel}>Scanned</Text>
-              </View>
+              <Ionicons name="search" size={20} color={theme.brand.primary} />
+              <Text style={styles.statValue}>{scannedCount}</Text>
+              <Text style={styles.statLabel}>Scanned</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <View style={[styles.statIconContainer, {backgroundColor: 'rgba(48, 209, 88, 0.15)'}]}>
-                <Ionicons name="checkmark-circle" size={16} color={theme.brand.accent} />
-              </View>
-              <View style={styles.statContent}>
-                <Text style={[styles.statValue, {color: theme.brand.accent}]}>{foundCount}</Text>
-                <Text style={styles.statLabel}>Found</Text>
-              </View>
+              <Ionicons name="checkmark-circle" size={20} color={theme.brand.accent} />
+              <Text style={[styles.statValue, {color: theme.brand.accent}]}>{foundCount}</Text>
+              <Text style={styles.statLabel}>Found</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <View style={[styles.statIconContainer, {backgroundColor: 'rgba(48, 209, 88, 0.15)'}]}>
-                <Ionicons name="cube" size={16} color={theme.icon.success} />
-              </View>
-              <View style={styles.statContent}>
-                <Text style={[styles.statValue, {color: theme.icon.success}]}>{savedCount}</Text>
-                <Text style={styles.statLabel}>Saved</Text>
-              </View>
+              <Ionicons name="cube" size={20} color={theme.icon.success} />
+              <Text style={[styles.statValue, {color: theme.icon.success}]}>{savedCount}</Text>
+              <Text style={styles.statLabel}>Saved</Text>
             </View>
           </View>
         </View>
@@ -347,85 +324,56 @@ const styles = StyleSheet.create({
     backgroundColor: theme.background.card,
     borderBottomWidth: 1,
     borderBottomColor: theme.border.default,
-    paddingTop: 24,
-    paddingBottom: 16,
+    paddingTop: 32,
+    paddingBottom: 20,
   },
   headerContent: {
-    paddingHorizontal: 20,
-    gap: 16,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  iconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: theme.background.elevated,
-    borderWidth: 1,
-    borderColor: theme.border.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    flex: 1,
-    gap: 4,
+    paddingHorizontal: 24,
+    gap: 20,
   },
   title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: theme.text.primary,
+    letterSpacing: -1,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: theme.text.secondary,
+    letterSpacing: -0.2,
+    marginTop: -12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: theme.background.elevated,
+    borderRadius: 14,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.border.subtle,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+  },
+  statValue: {
     fontSize: 24,
     fontWeight: '700',
     color: theme.text.primary,
     letterSpacing: -0.5,
   },
-  subtitle: {
-    fontSize: 13,
-    color: theme.text.secondary,
-    letterSpacing: -0.1,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: theme.background.elevated,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-  },
-  statItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  statIconContainer: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: 'rgba(10, 132, 255, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statContent: {
-    gap: 2,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: theme.text.primary,
-    letterSpacing: -0.3,
-  },
   statLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: theme.text.tertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   statDivider: {
     width: 1,
-    height: 30,
+    height: 48,
     backgroundColor: theme.border.subtle,
-    marginHorizontal: 6,
   },
   content: {
     padding: 20,
